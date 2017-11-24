@@ -122,6 +122,7 @@ Apos a busca dos dados, nesta rotina será feita a criação do objeto `lo_grid`
         too_many_lines                = 3
         others                        = 4.
 
+
 *   Eventos
     set handler me->handler_hotspot_click for lo_grid.
     set handler me->handler_user_command  for lo_grid.
@@ -144,16 +145,15 @@ Essa rotina é excelente para criação do `fieldcat`. Eu julgo muito maçante e
   method fieldcat .
 
     data: 
-      ls_fieldcat type line of lvc_t_fcat,
-      lobj_stdesc type ref to  cl_abap_structdescr,
-      lt_fields   type         cl_abap_structdescr=>included_view,
-      ls_fields   type line of cl_abap_structdescr=>included_view,
-      ls_desc     type x030l .
+      ls_fieldcat  type line of lvc_t_fcat,
+      lobj_stdesc  type ref to  cl_abap_structdescr,
+      loelem_descr type ref to  cl_abap_elemdescr,
+      lt_fields    type         cl_abap_structdescr=>included_view,
+      ls_desc      type x030l .
 
 
-    field-symbols:
-      <fs_fieldcat> like line of gt_fieldcat .
-    
+    FIELD-SYMBOLS: <fs_fieldcat> LIKE LINE OF gt_fieldcat,
+                   <fields>      TYPE LINE OF cl_abap_structdescr=>included_view.    
     refresh:
       gt_fieldcat .
 
@@ -172,29 +172,33 @@ Essa rotina é excelente para criação do `fieldcat`. Eu julgo muito maçante e
     lt_fields = lobj_stdesc->get_included_view( ).
 
 *   build field catalog
-    loop at lt_fields into ls_fields.
+    loop at lt_fields assinto <fields>.
 
-      ls_fieldcat-col_pos   = sy-tabix.
-      ls_fieldcat-fieldname = ls_fields-name.
-      if ls_fields-type->is_ddic_type( ) is not initial.
-        ls_desc              = ls_fields-type->get_ddic_header( ).
-        ls_fieldcat-rollname = ls_desc-tabname.
-      else.
-        ls_fieldcat-inttype  = ls_fields-type->type_kind.
-        ls_fieldcat-intlen   = ls_fields-type->length.
-*       ls_fieldcat-decimals = ls_fields-type->decimals.
+      APPEND INITIAL LINE TO gt_fieldcat ASSIGNING <fs_fieldcat>.
+      if <fs_fieldcat> is ASSIGNED.
+		  <fs_fieldcat>-col_pos   = sy-tabix.
+		  <fs_fieldcat>-fieldname = <fields>-name.
+
+	      loelem_descr ?= <fields>-type.
+		  if loelem_descr is bound.
+		    <fs_fieldcat>-edit_mask = loelem_descr->edit_mask.
+		  endif
+
+		  if <fields>-type->is_ddic_type( ) is not initial.
+			ls_desc              = <fields>-type->get_ddic_header( ).
+			<fs_fieldcat>-rollname = ls_desc-tabname.
+		  else.
+			<fs_fieldcat>-inttype  = <fields>-type->type_kind.
+			<fs_fieldcat>-intlen   = <fields>-type->length.
+		  endif.
+
+		  if <fs_fieldcat>-fieldname eq 'MARK' .
+			<fs_fieldcat>-mark = abap_on .
+		  endif .      
       endif.
-
-      if ls_fieldcat-fieldname eq 'MARK' .
-        ls_fieldcat-mark = abap_on .
-      endif .
-
-      append ls_fieldcat to gt_fieldcat .
-      clear: ls_fieldcat, ls_desc .
-      
     endloop.
 
-  endmethod .                    "fieldcat
+endmethod .                    "fieldcat
 
 ```
 #### call_screen_default ####
