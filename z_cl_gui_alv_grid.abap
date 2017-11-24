@@ -215,11 +215,12 @@ class gcl_report implementation.
   method fieldcat .
 
     data:
-      ls_fieldcat type line of lvc_t_fcat,
-      lobj_stdesc type ref to  cl_abap_structdescr,
-      lt_fields   type         cl_abap_structdescr=>included_view,
-      ls_fields   type line of cl_abap_structdescr=>included_view,
-      ls_desc     type x030l .
+      ls_fieldcat   type line of lvc_t_fcat,
+      lobj_stdesc   type ref to  cl_abap_structdescr,
+      loelem_descr  type reg to  cl_abap_elemdescr,
+      lt_fields     type         cl_abap_structdescr=>included_view,
+      ls_fields     type line of cl_abap_structdescr=>included_view,
+      ls_desc       type x030l .
 
 
     field-symbols:
@@ -247,6 +248,8 @@ class gcl_report implementation.
 
       ls_fieldcat-col_pos   = sy-tabix.
       ls_fieldcat-fieldname = ls_fields-name.
+      loelem_descr ?= ls_fields-type.
+      ls_fieldcat-edit_mask = loelem_descr->edit_mask.
       if ls_fields-type->is_ddic_type( ) is not initial.
         ls_desc              = ls_fields-type->get_ddic_header( ).
         ls_fieldcat-rollname = ls_desc-tabname.
